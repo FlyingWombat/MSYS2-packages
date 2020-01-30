@@ -1,7 +1,5 @@
 pkgname=kakoune
 pkgver=2020.01.16
-# _ref="#branch=master"
-_ref="#tag=v${pkgver}"
 pkgrel=1
 pkgdesc='Multiple-selection, UNIX-flavored modal editor'
 arch=('x86_64' 'armv7h')
@@ -20,24 +18,20 @@ optdepends=(
   'xorg-xmessage: for nicer debugging messages'
 )
 makedepends=(
-  'git'
   'gcc'
 )
 provides=('kakoune')
 conflicts=('kakoune')
-source=("${pkgname}::git+https://github.com/mawww/kakoune.git${_ref}"
+source=("https://github.com/mawww/kakoune/releases/download/v${pkgver}/kakoune-${pkgver}.tar.bz2"
        'msys-makefile.patch')
-sha256sums=('SKIP'
+sha256sums=('a094f1689f0228308f631e371b382b0c0522391fc8b6c23a6cbc71ff404a0dae'
             '6f0ee1a193bf5e45b2d94627e3fd93f409e4a11e6e19b3a6ace1c8bb8184c09d')
 
-prepare(){
-  cd "${srcdir}/${pkgname}"
+# https://github.com/msys2/MSYS2-packages/issues/1216
+export MSYS="winsymlinks:lnk"
 
-  # Ensure UNIX line endings when checking out from git
-  # find . -type f -not -path "*.git/*" -print0 | xargs -0 dos2unix  # slower
-  git config core.autocrlf input
-  find . -type f -not -path "*.git/*" -delete
-  git checkout .
+prepare(){
+  cd "${srcdir}/${pkgname}-${pkgver}"
 
   patch -p1 < ../msys-makefile.patch
 
@@ -56,23 +50,18 @@ prepare(){
   fi
 }
 
-# pkgver() {
-#   cd "${srcdir}/${pkgname}"
-#   printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
-# }
-
 check() {
-  cd "${srcdir}/${pkgname}/src"
+  cd "${srcdir}/${pkgname}-${pkgver}/src"
   make test
 }
 
 build() {
-  cd "${srcdir}/${pkgname}/src"
+  cd "${srcdir}/${pkgname}-${pkgver}/src"
   make
 }
 
 package() {
-  cd "${srcdir}/${pkgname}/src"
+  cd "${srcdir}/${pkgname}-${pkgver}/src"
   make install-strip DESTDIR="${pkgdir}" PREFIX=/usr
   install -D ../UNLICENSE "${pkgdir}"/usr/share/licenses/${pkgname}/LICENSE
 
