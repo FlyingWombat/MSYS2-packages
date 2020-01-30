@@ -1,0 +1,14 @@
+diff --git a/src/Makefile b/src/Makefile
+index 19a38e5a..a6ac8357 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -75,6 +75,9 @@ else ifeq ($(os),OpenBSD)
+ else ifneq (,$(findstring CYGWIN,$(os)))
+     CPPFLAGS += -D_XOPEN_SOURCE=700
+     LIBS += -lncursesw -ldbghelp
++else ifneq (,$(findstring MSYS_NT,$(os)))
++    CPPFLAGS += -D_XOPEN_SOURCE=700
++    LIBS += -lncursesw -ldbghelp
+ else
+     ifeq ($(PKG_CONFIG),)
+     	$(error "pkg-config not found in PATH")

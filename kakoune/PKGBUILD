@@ -1,0 +1,81 @@
+pkgname=kakoune
+pkgver=2020.01.16
+# _ref="#branch=master"
+_ref="#tag=v${pkgver}"
+pkgrel=1
+pkgdesc='Multiple-selection, UNIX-flavored modal editor'
+arch=('x86_64' 'armv7h')
+url='https://github.com/mawww/kakoune'
+license=('custom:unlicense')
+depends=(
+  'ncurses-devel'
+)
+optdepends=(
+  'aspell: spell checking support'
+  'clang: add command for C/CPP insert mode completion support'
+  'ranger: provides file explorer functionality'
+  'tmux: tabbing support'
+  'universal-ctags-git: provides `readtags` used by `:tag` command to jump on a tag definition'
+  'xdotool: add support for kak windows switching (in grep, make... files)'
+  'xorg-xmessage: for nicer debugging messages'
+)
+makedepends=(
+  'git'
+  'gcc'
+)
+provides=('kakoune')
+conflicts=('kakoune')
+source=("${pkgname}::git+https://github.com/mawww/kakoune.git${_ref}"
+       'msys-makefile.patch')
+sha256sums=('SKIP'
+            '6f0ee1a193bf5e45b2d94627e3fd93f409e4a11e6e19b3a6ace1c8bb8184c09d')
+
+prepare(){
+  cd "${srcdir}/${pkgname}"
+
+  # Ensure UNIX line endings when checking out from git
+  # find . -type f -not -path "*.git/*" -print0 | xargs -0 dos2unix  # slower
+  git config core.autocrlf input
+  find . -type f -not -path "*.git/*" -delete
+  git checkout .
+
+  patch -p1 < ../msys-makefile.patch
+
+  # Msys2 removed unix symlinks
+  if [[ `uname` == *"MSYS"* ]]; then
+    rm -f share/kak/autoload
+    cp -r rc share/kak/autoload
+    rm -f share/kak/colors
+    cp -r colors share/kak/colors
+    rm -f share/kak/doc
+    cp -r doc/pages share/kak/doc
+    rm -f share/kak/gdb
+    cp -r gdb share/kak/gdb
+    rm -f share/kak/rc
+    cp -r rc share/kak/rc
+  fi
+}
+
+# pkgver() {
+#   cd "${srcdir}/${pkgname}"
+#   printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+# }
+
+check() {
+  cd "${srcdir}/${pkgname}/src"
+  make test
+}
+
+build() {
+  cd "${srcdir}/${pkgname}/src"
+  make
+}
+
+package() {
+  cd "${srcdir}/${pkgname}/src"
+  make install-strip DESTDIR="${pkgdir}" PREFIX=/usr
+  install -D ../UNLICENSE "${pkgdir}"/usr/share/licenses/${pkgname}/LICENSE
+
+  # https://github.com/mawww/kakoune/wiki/Windows-tips
+  mv "${pkgdir}/usr/bin/kak" "${pkgdir}/usr/bin/kak.exe"
+}
